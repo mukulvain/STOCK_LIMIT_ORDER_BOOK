@@ -1,0 +1,1 @@
+web: daphne trading_system.asgi:application
