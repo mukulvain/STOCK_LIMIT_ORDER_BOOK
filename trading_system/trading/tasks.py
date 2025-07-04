@@ -2,6 +2,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from .models import Order, Trade
 
+
 def serialize_order(order):
     return {
         "id": order.id,
@@ -14,6 +15,7 @@ def serialize_order(order):
         "timestamp": order.timestamp.isoformat(),
     }
 
+
 def serialize_trade(trade):
     return {
         "id": trade.id,
@@ -24,12 +26,17 @@ def serialize_trade(trade):
         "timestamp": trade.timestamp.isoformat(),
     }
 
+
 def broadcast_orderbook():
     channel_layer = get_channel_layer()
 
-    buy_orders = Order.objects.filter(order_type='BUY', is_matched=False).order_by('-price', 'timestamp')[:10]
-    sell_orders = Order.objects.filter(order_type='SELL', is_matched=False).order_by('price', 'timestamp')[:10]
-    recent_trades = Trade.objects.all().order_by('-timestamp')[:10]
+    buy_orders = Order.objects.filter(order_type="BUY", is_matched=False).order_by(
+        "-price", "timestamp"
+    )[:10]
+    sell_orders = Order.objects.filter(order_type="SELL", is_matched=False).order_by(
+        "price", "timestamp"
+    )[:10]
+    recent_trades = Trade.objects.all().order_by("-timestamp")[:10]
 
     best_bid = buy_orders.first()
     best_ask = sell_orders.first()
@@ -39,13 +46,13 @@ def broadcast_orderbook():
     trades_data = [serialize_trade(t) for t in recent_trades]
 
     best_bid_data = {
-        'price': float(best_bid.price) if best_bid else None,
-        'disclosed': best_bid.disclosed if best_bid else None,
+        "price": float(best_bid.price) if best_bid else None,
+        "disclosed": best_bid.disclosed if best_bid else None,
     }
 
     best_ask_data = {
-        'price': float(best_ask.price) if best_ask else None,
-        'disclosed': best_ask.disclosed if best_ask else None,
+        "price": float(best_ask.price) if best_ask else None,
+        "disclosed": best_ask.disclosed if best_ask else None,
     }
 
     async_to_sync(channel_layer.group_send)(
@@ -58,7 +65,6 @@ def broadcast_orderbook():
                 "trades": trades_data,
                 "best_bid": best_bid_data,
                 "best_ask": best_ask_data,
-            }
-        }
+            },
+        },
     )
-
